@@ -309,7 +309,8 @@ el('btn-confirmar').addEventListener('click', async () => {
     if (blobAtual) {
       const b64 = await blobParaBase64(blobAtual);
       const r = await enviarAPI({
-        acao: 'audio', sessao: SESSAO, indice: idx + 1, base64: b64, mime: blobAtual.type
+        acao: 'audio', sessao: SESSAO, indice: idx + 1, base64: b64, mime: blobAtual.type,
+        nome: el('nome').value.trim(), modulo: q.modulo
       });
       if (r && r.ok) item.audio = r.url;
     }
