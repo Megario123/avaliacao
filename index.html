@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Avaliação — Vendedor(a) Externo(a)</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16233B; --ink-2:#4A5872; --paper:#E9EDF1; --card:#FFFFFF;
+    --line:#D2D9E1; --rec:#C8342A; --ok:#1F6F5C; --gold:#C58A17;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Archivo',system-ui,sans-serif;background:var(--paper);color:var(--ink);
+    line-height:1.55;-webkit-font-smoothing:antialiased;padding:20px 16px 48px}
+  .wrap{max-width:560px;margin:0 auto}
+  .brand{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);margin-bottom:6px}
+  h1{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.2;margin-bottom:20px}
+  h2{font-size:19px;font-weight:600;letter-spacing:-.01em;margin-bottom:12px}
+  p{color:var(--ink-2);margin-bottom:14px}
+  strong{color:var(--ink);font-weight:600}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:22px;margin-bottom:16px}
+  .roteiro{display:flex;align-items:center;gap:0;margin-bottom:22px}
+  .parada{flex:1;display:flex;align-items:center}
+  .ponto{width:13px;height:13px;border-radius:50%;border:2px solid var(--line);background:var(--card);flex-shrink:0}
+  .parada.feita .ponto{background:var(--ok);border-color:var(--ok)}
+  .parada.atual .ponto{background:var(--card);border-color:var(--ink);box-shadow:0 0 0 4px rgba(22,35,59,.10)}
+  .trilha{flex:1;height:2px;background:var(--line)}
+  .parada.feita .trilha{background:var(--ok)}
+  label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+  input[type=text]{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:8px;
+    font-family:inherit;font-size:16px;color:var(--ink);background:var(--card);margin-bottom:16px}
+  input[type=text]:focus{outline:2px solid var(--ink);outline-offset:-1px;border-color:var(--ink)}
+  .aceite{display:flex;gap:10px;align-items:flex-start;background:#F4F6F9;border:1px solid var(--line);
+    border-radius:8px;padding:14px;margin-bottom:18px}
+  .aceite input{margin-top:4px;width:18px;height:18px;flex-shrink:0}
+  .aceite span{font-size:13px;color:var(--ink-2);line-height:1.5}
+  .btn{width:100%;padding:15px;border:none;border-radius:8px;background:var(--ink);color:#fff;
+    font-family:inherit;font-size:16px;font-weight:600;cursor:pointer}
+  .btn:disabled{opacity:.35;cursor:not-allowed}
+  .btn-linha{background:transparent;color:var(--ink-2);border:1px solid var(--line);margin-top:10px}
+  .eyebrow{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+  .pergunta{font-size:19px;font-weight:500;line-height:1.45;color:var(--ink);margin-bottom:4px}
+  .gravador{text-align:center;padding:26px 0 10px}
+  .rec{width:88px;height:88px;border-radius:50%;border:none;background:var(--rec);cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center}
+  .rec .quadro{width:26px;height:26px;border-radius:4px;background:#fff;display:none}
+  .rec .bola{width:30px;height:30px;border-radius:50%;background:#fff}
+  .rec.gravando{animation:pulsa 1.4s ease-in-out infinite}
+  .rec.gravando .quadro{display:block}
+  .rec.gravando .bola{display:none}
+  @keyframes pulsa{0%,100%{box-shadow:0 0 0 0 rgba(200,52,42,.32)}50%{box-shadow:0 0 0 14px rgba(200,52,42,0)}}
+  @media (prefers-reduced-motion:reduce){.rec.gravando{animation:none}}
+  .cronometro{font-size:30px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:16px;letter-spacing:-.02em}
+  .dica{font-size:13px;color:var(--ink-2);margin-top:4px}
+  .dica.alerta{color:var(--gold);font-weight:600}
+  .dica.pronto{color:var(--ok);font-weight:600}
+  .transcricao{background:#F4F6F9;border:1px solid var(--line);border-radius:8px;padding:16px;
+    min-height:96px;font-size:15px;color:var(--ink);margin-top:18px;white-space:pre-wrap}
+  .transcricao:empty::before{content:'O que você falar aparece aqui.';color:#98A3B4}
+  .parcial{color:#98A3B4}
+  .aviso{background:#FDF6E7;border:1px solid #EBD9AC;border-radius:8px;padding:14px;font-size:13px;color:#6B5312;margin-bottom:16px}
+  .erro{background:#FBEDEC;border:1px solid #EFC9C5;border-radius:8px;padding:14px;font-size:13px;color:#8C2A22;margin-bottom:16px}
+  .fim{text-align:center;padding:24px 0}
+  .selo{width:60px;height:60px;border-radius:50%;background:var(--ok);color:#fff;font-size:30px;
+    display:inline-flex;align-items:center;justify-content:center;margin-bottom:18px}
+  .oculto{display:none}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <section id="tela-inicio">
+    <div class="brand" id="marca">MEGA RIO</div>
+    <h1>Avaliação para Vendedor(a) Externo(a)</h1>
+    <div class="card">
+      <p>São <strong>5 perguntas</strong>. Você responde falando, direto nesta página. Cada resposta leva de <strong>20 segundos a 1 minuto</strong>.</p>
+      <p>Não existe resposta certa decorada. Conte como você agiria de verdade, do seu jeito.</p>
+      <div id="aviso-navegador" class="aviso oculto"></div>
+      <label for="nome">Seu nome completo</label>
+      <input type="text" id="nome" autocomplete="name" placeholder="Nome e sobrenome">
+      <label for="fone">Seu WhatsApp</label>
+      <input type="text" id="fone" inputmode="tel" autocomplete="tel" placeholder="(00) 00000-0000">
+      <div class="aceite">
+        <input type="checkbox" id="aceite">
+        <span>Autorizo a gravação das minhas respostas em áudio. Elas serão transcritas e analisadas com apoio de inteligência artificial, seguindo critérios padronizados. <strong>A decisão final é sempre tomada por uma pessoa</strong>, e posso pedir revisão. Meus dados serão usados só neste processo seletivo e apagados em até 6 meses.</span>
+      </div>
+      <button class="btn" id="btn-comecar" disabled>Começar</button>
+    </div>
+  </section>
+
+  <section id="tela-pergunta" class="oculto">
+    <div class="roteiro" id="roteiro"></div>
+    <div class="card">
+      <div class="eyebrow" id="rotulo"></div>
+      <p class="pergunta" id="texto-pergunta"></p>
+      <div class="gravador">
+        <button class="rec" id="btn-rec" aria-label="Gravar resposta">
+          <span class="bola"></span><span class="quadro"></span>
+        </button>
+        <div class="cronometro" id="cronometro">0:00</div>
+        <div class="dica" id="dica">Toque para gravar</div>
+      </div>
+      <div id="erro-mic" class="erro oculto"></div>
+      <div class="transcricao" id="transcricao" aria-live="polite"></div>
+      <button class="btn" id="btn-confirmar" disabled style="margin-top:18px">Confirmar e continuar</button>
+      <button class="btn btn-linha oculto" id="btn-regravar">Gravar de novo</button>
+    </div>
+  </section>
+
+  <section id="tela-fim" class="oculto">
+    <div class="card fim">
+      <div class="selo">&#10003;</div>
+      <h2>Respostas enviadas</h2>
+      <p id="msg-fim">Obrigado! Nossa equipe vai analisar suas respostas e entrar em contato pelo WhatsApp.</p>
+    </div>
+  </section>
+
+  <div class="sr" id="status-envio" aria-live="assertive"></div>
+</div>
+
+<script>
+// ============================================================================
+// CONFIGURAÇÃO — troque a API_URL pela URL /exec da sua porta dos fundos
+// (Apps Script → Implantar → App da Web). Deixe o /exec no final.
+// ============================================================================
+const API_URL = 'https://script.google.com/macros/s/AKfycbxCssPR8seNHc1Ax7QFDZyduZC8RCWEzSNjiT1nOhhXB6Sd6sjG5nwAp109tNIsYSGVBw/exec';
+
+// Banco de perguntas (antes vinha do Apps Script; agora fica na própria página)
+const PERGUNTAS = {
+  '1-2': [
+    { modulo: 'Negociação', texto: 'Durante uma visita, o cliente informa que encontrou um concorrente com preço mais baixo e não pretende comprar. Qual a melhor atitude?' },
+    { modulo: 'Gestão de carteira', texto: 'Ao finalizar suas visitas do dia, você ainda tem tempo disponível no roteiro. O que é mais indicado fazer?' },
+    { modulo: 'Conhecimento de produtos', texto: 'Durante uma negociação, o cliente faz uma pergunta sobre o produto e você não sabe a resposta. Como agir?' },
+    { modulo: 'Foco em resultados', texto: 'Faltando poucos dias para o fechamento do mês, você ainda está abaixo da meta de vendas. O que deve fazer?' },
+    { modulo: 'Resolução de problemas', texto: 'Ao chegar a um cliente, você descobre que o responsável pelas compras não está disponível. Como agir?' }
+  ],
+  '3-4': [
+    { modulo: 'Negociação', texto: 'O comprador aceita o produto, mas exige um prazo de pagamento que foge da nossa política. Como você conduz?' },
+    { modulo: 'Gestão de carteira', texto: 'Como você decide quais clientes da sua carteira visitar primeiro na semana?' },
+    { modulo: 'Conhecimento de produtos', texto: 'Como você apresenta um produto novo para um cliente que já compra bem o portfólio antigo?' },
+    { modulo: 'Foco em resultados', texto: 'Você está 30% abaixo da meta e faltam 10 dias. Como monta seu plano?' },
+    { modulo: 'Resolução de problemas', texto: 'Um cliente importante está insatisfeito com o prazo de entrega e ameaça parar de comprar. Como você conduz?' }
+  ],
+  '5': [
+    { modulo: 'Negociação', texto: 'Uma grande conta pede desconto adicional alegando volume, mas o histórico dela mostra giro abaixo do combinado. Como você conduz a negociação?' },
+    { modulo: 'Gestão de carteira', texto: 'Como você identifica uma nova conta com potencial de virar Key Account?' },
+    { modulo: 'Conhecimento de produtos', texto: 'Como você usa dados de sell-out e giro para defender o nosso mix numa grande conta?' },
+    { modulo: 'Foco em resultados', texto: 'Como você constrói o forecast de uma grande conta e o que faz quando ele está furando?' },
+    { modulo: 'Resolução de problemas', texto: 'Uma ruptura de estoque vai afetar a principal promoção de uma grande conta. Como você age?' }
+  ]
+};
+
+// Lê o nível da URL (?nivel=1-2). Padrão: 1-2
+const params = new URLSearchParams(window.location.search);
+const NIVEL = params.get('nivel') || '1-2';
+const LISTA = PERGUNTAS[NIVEL] || PERGUNTAS['1-2'];
+
+const SESSAO = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+let idx = 0, respostas = [], gravando = false;
+let recorder = null, chunks = [], stream = null;
+let sr = null, textoFinal = '', textoParcial = '';
+let t0 = 0, timer = null, segundos = 0, blobAtual = null;
+
+const SEG_MIN = 20, SEG_MAX = 60;
+const el = id => document.getElementById(id);
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const temTranscricao = !!SR;
+
+if (!temTranscricao) {
+  const a = el('aviso-navegador');
+  a.classList.remove('oculto');
+  a.innerHTML = 'Seu navegador não transcreve a fala automaticamente. <strong>Você pode continuar normalmente</strong> — sua voz será gravada e nossa equipe ouve. Se preferir ver o texto na tela, use o <strong>Chrome</strong>.';
+}
+
+function validar() {
+  el('btn-comecar').disabled = !(el('nome').value.trim().length > 2 && el('aceite').checked);
+}
+el('nome').addEventListener('input', validar);
+el('aceite').addEventListener('change', validar);
+el('btn-comecar').addEventListener('click', () => {
+  el('tela-inicio').classList.add('oculto');
+  el('tela-pergunta').classList.remove('oculto');
+  mostrarPergunta();
+});
+
+function desenharRoteiro() {
+  const r = el('roteiro'); r.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const p = document.createElement('div');
+    p.className = 'parada' + (i < idx ? ' feita' : (i === idx ? ' atual' : ''));
+    p.innerHTML = '<span class="ponto"></span>' + (i < 4 ? '<span class="trilha"></span>' : '');
+    r.appendChild(p);
+  }
+}
+
+function mostrarPergunta() {
+  const q = LISTA[idx];
+  desenharRoteiro();
+  el('rotulo').textContent = 'Pergunta ' + (idx + 1) + ' de 5 · ' + q.modulo;
+  el('texto-pergunta').textContent = q.texto;
+  el('transcricao').textContent = '';
+  el('cronometro').textContent = '0:00';
+  el('dica').textContent = 'Toque para gravar';
+  el('dica').className = 'dica';
+  el('btn-confirmar').disabled = true;
+  el('btn-regravar').classList.add('oculto');
+  el('erro-mic').classList.add('oculto');
+  textoFinal = ''; textoParcial = ''; blobAtual = null; segundos = 0;
+  window.scrollTo(0, 0);
+}
+
+el('btn-rec').addEventListener('click', () => gravando ? parar() : iniciar());
+el('btn-regravar').addEventListener('click', mostrarPergunta);
+
+async function iniciar() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (e) {
+    const err = el('erro-mic');
+    err.classList.remove('oculto');
+    err.innerHTML = 'Não conseguimos acessar seu microfone. Toque no ícone à <strong>esquerda do endereço</strong> → <strong>Permissões</strong> → ative o <strong>Microfone</strong>. Depois recarregue e tente de novo.';
+    return;
+  }
+  chunks = [];
+  const mime = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
+  recorder = new MediaRecorder(stream, { mimeType: mime });
+  recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+  recorder.onstop = () => {
+    blobAtual = new Blob(chunks, { type: mime });
+    stream.getTracks().forEach(t => t.stop());
+    el('btn-confirmar').disabled = segundos < SEG_MIN;
+    el('btn-regravar').classList.remove('oculto');
+    if (segundos < SEG_MIN) {
+      el('dica').textContent = 'Muito curto. Grave pelo menos 20 segundos.';
+      el('dica').className = 'dica alerta';
+    } else {
+      el('dica').textContent = 'Resposta gravada. Confira o texto abaixo.';
+      el('dica').className = 'dica pronto';
+    }
+  };
+  recorder.start();
+
+  if (temTranscricao) {
+    sr = new SR();
+    sr.lang = 'pt-BR'; sr.continuous = true; sr.interimResults = true;
+    sr.onresult = ev => {
+      textoParcial = '';
+      for (let i = ev.resultIndex; i < ev.results.length; i++) {
+        const t = ev.results[i][0].transcript;
+        if (ev.results[i].isFinal) textoFinal += t + ' ';
+        else textoParcial += t;
+      }
+      el('transcricao').innerHTML = textoFinal + '<span class="parcial">' + textoParcial + '</span>';
+    };
+    sr.onerror = () => {};
+    try { sr.start(); } catch (e) {}
+  }
+
+  gravando = true;
+  el('btn-rec').classList.add('gravando');
+  el('btn-rec').setAttribute('aria-label', 'Parar gravação');
+  el('dica').textContent = 'Gravando... toque para parar';
+  el('dica').className = 'dica';
+  t0 = Date.now();
+  timer = setInterval(tick, 250);
+}
+
+function tick() {
+  segundos = Math.floor((Date.now() - t0) / 1000);
+  const m = Math.floor(segundos / 60), s = segundos % 60;
+  el('cronometro').textContent = m + ':' + String(s).padStart(2, '0');
+  if (segundos >= SEG_MAX) parar();
+}
+
+function parar() {
+  if (!gravando) return;
+  gravando = false;
+  clearInterval(timer);
+  el('btn-rec').classList.remove('gravando');
+  el('btn-rec').setAttribute('aria-label', 'Gravar resposta');
+  if (recorder && recorder.state !== 'inactive') recorder.stop();
+  if (sr) { try { sr.stop(); } catch (e) {} }
+  el('transcricao').textContent = textoFinal.trim();
+}
+
+// Envia um POST para a porta dos fundos (Apps Script)
+async function enviarAPI(payload) {
+  const resp = await fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify(payload)   // sem headers extras: evita bloqueio de CORS
+  });
+  return resp.json();
+}
+
+el('btn-confirmar').addEventListener('click', async () => {
+  const btn = el('btn-confirmar');
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+  const q = LISTA[idx];
+  const item = { modulo: q.modulo, transcricao: textoFinal.trim(), segundos: segundos, audio: '' };
+
+  try {
+    if (blobAtual) {
+      const b64 = await blobParaBase64(blobAtual);
+      const r = await enviarAPI({
+        acao: 'audio', sessao: SESSAO, indice: idx + 1, base64: b64, mime: blobAtual.type
+      });
+      if (r && r.ok) item.audio = r.url;
+    }
+  } catch (e) { /* se o áudio falhar, o texto ainda segue */ }
+
+  respostas.push(item);
+  idx++;
+  btn.textContent = 'Confirmar e continuar';
+  btn.disabled = false;
+  if (idx < 5) mostrarPergunta();
+  else enviarFinal();
+});
+
+function blobParaBase64(blob) {
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onloadend = () => res(fr.result.split(',')[1]);
+    fr.onerror = rej;
+    fr.readAsDataURL(blob);
+  });
+}
+
+async function enviarFinal() {
+  el('tela-pergunta').classList.add('oculto');
+  el('tela-fim').classList.remove('oculto');
+  el('msg-fim').textContent = 'Salvando suas respostas...';
+  el('status-envio').textContent = 'Enviando';
+  window.scrollTo(0, 0);
+
+  try {
+    await enviarAPI({
+      acao: 'finalizar',
+      sessao: SESSAO,
+      nome: el('nome').value.trim(),
+      telefone: el('fone').value.trim(),
+      nivel: NIVEL,
+      consentimento: true,
+      navegador: navigator.userAgent.slice(0, 120),
+      respostas: respostas
+    });
+    el('msg-fim').textContent = 'Obrigado! Nossa equipe vai analisar suas respostas e entrar em contato pelo WhatsApp.';
+    el('status-envio').textContent = 'Respostas enviadas com sucesso';
+  } catch (e) {
+    el('msg-fim').innerHTML = 'Suas gravações foram salvas, mas houve um erro ao registrar. <strong>Avise nossa equipe pelo WhatsApp.</strong>';
+  }
+}
+</script>
+</body>
+</html>
