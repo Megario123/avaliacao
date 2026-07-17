@@ -55,9 +55,10 @@
   .dica{font-size:13px;color:var(--ink-2);margin-top:4px}
   .dica.alerta{color:var(--gold);font-weight:600}
   .dica.pronto{color:var(--ok);font-weight:600}
+  audio{width:100%;margin-top:16px}
   .transcricao{background:#F4F6F9;border:1px solid var(--line);border-radius:8px;padding:16px;
-    min-height:96px;font-size:15px;color:var(--ink);margin-top:18px;white-space:pre-wrap}
-  .transcricao:empty::before{content:'O que você falar aparece aqui.';color:#98A3B4}
+    min-height:70px;font-size:15px;color:var(--ink);margin-top:14px;white-space:pre-wrap}
+  .transcricao:empty::before{content:'A transcrição aparece aqui (quando o aparelho permite).';color:#98A3B4}
   .parcial{color:#98A3B4}
   .aviso{background:#FDF6E7;border:1px solid #EBD9AC;border-radius:8px;padding:14px;font-size:13px;color:#6B5312;margin-bottom:16px}
   .erro{background:#FBEDEC;border:1px solid #EFC9C5;border-radius:8px;padding:14px;font-size:13px;color:#8C2A22;margin-bottom:16px}
@@ -78,9 +79,8 @@
       <p>São <strong>5 perguntas</strong>. Você responde falando, direto nesta página. Cada resposta leva de <strong>20 segundos a 1 minuto</strong>.</p>
       <p>Não existe resposta certa decorada. Conte como você agiria de verdade, do seu jeito.</p>
       <div class="aviso" style="background:#EAF3EF;border-color:#B8DBCB;color:#1F6F5C">
-        <strong>Dica importante:</strong> fale com calma e sem pressa, como numa conversa normal. Falar pausado ajuda a transcrição a entender melhor a sua resposta.
+        <strong>Dica:</strong> fale com calma e num lugar silencioso. Depois de gravar, você pode ouvir sua resposta e regravar se quiser.
       </div>
-      <div id="aviso-navegador" class="aviso oculto"></div>
       <label for="nome">Seu nome completo</label>
       <input type="text" id="nome" autocomplete="name" placeholder="Nome e sobrenome">
       <label for="fone">Seu WhatsApp</label>
@@ -106,7 +106,8 @@
         <div class="dica" id="dica">Toque para gravar</div>
       </div>
       <div id="erro-mic" class="erro oculto"></div>
-      <div class="transcricao" id="transcricao" aria-live="polite"></div>
+      <audio id="player" controls class="oculto"></audio>
+      <div class="transcricao oculto" id="transcricao" aria-live="polite"></div>
       <button class="btn" id="btn-confirmar" disabled style="margin-top:18px">Confirmar e continuar</button>
       <button class="btn btn-linha oculto" id="btn-regravar">Gravar de novo</button>
     </div>
@@ -124,13 +125,8 @@
 </div>
 
 <script>
-// ============================================================================
-// CONFIGURAÇÃO — troque a API_URL pela URL /exec da sua porta dos fundos
-// (Apps Script → Implantar → App da Web). Deixe o /exec no final.
-// ============================================================================
 const API_URL = 'https://script.google.com/macros/s/AKfycbxCssPR8seNHc1Ax7QFDZyduZC8RCWEzSNjiT1nOhhXB6Sd6sjG5nwAp109tNIsYSGVBw/exec';
 
-// Banco de perguntas (antes vinha do Apps Script; agora fica na própria página)
 const PERGUNTAS = {
   '1-2': [
     { modulo: 'Negociação', texto: 'Durante uma visita, o cliente informa que encontrou um concorrente com preço mais baixo e não pretende comprar. Qual a melhor atitude?' },
@@ -155,11 +151,9 @@ const PERGUNTAS = {
   ]
 };
 
-// Lê o nível da URL (?nivel=1-2). Padrão: 1-2
 const params = new URLSearchParams(window.location.search);
 const NIVEL = params.get('nivel') || '1-2';
 const LISTA = PERGUNTAS[NIVEL] || PERGUNTAS['1-2'];
-
 const SESSAO = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 let idx = 0, respostas = [], gravando = false;
@@ -171,12 +165,6 @@ const SEG_MIN = 20, SEG_MAX = 60;
 const el = id => document.getElementById(id);
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const temTranscricao = !!SR;
-
-if (!temTranscricao) {
-  const a = el('aviso-navegador');
-  a.classList.remove('oculto');
-  a.innerHTML = 'Seu navegador não transcreve a fala automaticamente. <strong>Você pode continuar normalmente</strong> — sua voz será gravada e nossa equipe ouve. Se preferir ver o texto na tela, use o <strong>Chrome</strong>.';
-}
 
 function validar() {
   el('btn-comecar').disabled = !(el('nome').value.trim().length > 2 && el('aceite').checked);
@@ -204,13 +192,16 @@ function mostrarPergunta() {
   desenharRoteiro();
   el('rotulo').textContent = 'Pergunta ' + (idx + 1) + ' de 5 · ' + q.modulo;
   el('texto-pergunta').textContent = q.texto;
-  el('transcricao').textContent = '';
   el('cronometro').textContent = '0:00';
   el('dica').textContent = 'Toque para gravar';
   el('dica').className = 'dica';
   el('btn-confirmar').disabled = true;
   el('btn-regravar').classList.add('oculto');
   el('erro-mic').classList.add('oculto');
+  el('player').classList.add('oculto');
+  el('player').removeAttribute('src');
+  el('transcricao').classList.add('oculto');
+  el('transcricao').textContent = '';
   textoFinal = ''; textoParcial = ''; blobAtual = null; segundos = 0;
   window.scrollTo(0, 0);
 }
@@ -234,19 +225,24 @@ async function iniciar() {
   recorder.onstop = () => {
     blobAtual = new Blob(chunks, { type: mime });
     stream.getTracks().forEach(t => t.stop());
+    // player para ouvir a própria resposta (funciona em qualquer aparelho)
+    el('player').src = URL.createObjectURL(blobAtual);
+    el('player').classList.remove('oculto');
     el('btn-confirmar').disabled = segundos < SEG_MIN;
     el('btn-regravar').classList.remove('oculto');
     if (segundos < SEG_MIN) {
       el('dica').textContent = 'Muito curto. Grave pelo menos 20 segundos.';
       el('dica').className = 'dica alerta';
     } else {
-      el('dica').textContent = 'Resposta gravada. Confira o texto abaixo.';
+      el('dica').textContent = 'Resposta gravada. Ouça abaixo. Se quiser, grave de novo.';
       el('dica').className = 'dica pronto';
     }
   };
   recorder.start();
 
+  // transcrição ao vivo: só aparece se o aparelho suportar (computador e alguns Androids)
   if (temTranscricao) {
+    el('transcricao').classList.remove('oculto');
     sr = new SR();
     sr.lang = 'pt-BR'; sr.continuous = true; sr.interimResults = true;
     sr.onresult = ev => {
@@ -286,15 +282,10 @@ function parar() {
   el('btn-rec').setAttribute('aria-label', 'Gravar resposta');
   if (recorder && recorder.state !== 'inactive') recorder.stop();
   if (sr) { try { sr.stop(); } catch (e) {} }
-  el('transcricao').textContent = textoFinal.trim();
 }
 
-// Envia um POST para a porta dos fundos (Apps Script)
 async function enviarAPI(payload) {
-  const resp = await fetch(API_URL, {
-    method: 'POST',
-    body: JSON.stringify(payload)   // sem headers extras: evita bloqueio de CORS
-  });
+  const resp = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
   return resp.json();
 }
 
@@ -314,7 +305,7 @@ el('btn-confirmar').addEventListener('click', async () => {
       });
       if (r && r.ok) item.audio = r.url;
     }
-  } catch (e) { /* se o áudio falhar, o texto ainda segue */ }
+  } catch (e) {}
 
   respostas.push(item);
   idx++;
@@ -339,17 +330,11 @@ async function enviarFinal() {
   el('msg-fim').textContent = 'Salvando suas respostas...';
   el('status-envio').textContent = 'Enviando';
   window.scrollTo(0, 0);
-
   try {
     await enviarAPI({
-      acao: 'finalizar',
-      sessao: SESSAO,
-      nome: el('nome').value.trim(),
-      telefone: el('fone').value.trim(),
-      nivel: NIVEL,
-      consentimento: true,
-      navegador: navigator.userAgent.slice(0, 120),
-      respostas: respostas
+      acao: 'finalizar', sessao: SESSAO, nome: el('nome').value.trim(),
+      telefone: el('fone').value.trim(), nivel: NIVEL, consentimento: true,
+      navegador: navigator.userAgent.slice(0, 120), respostas: respostas
     });
     el('msg-fim').textContent = 'Obrigado! Nossa equipe vai analisar suas respostas e entrar em contato pelo WhatsApp.';
     el('status-envio').textContent = 'Respostas enviadas com sucesso';
