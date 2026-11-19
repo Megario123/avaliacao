@@ -28,9 +28,11 @@
   .trilha{flex:1;height:2px;background:var(--line)}
   .parada.feita .trilha{background:var(--ok)}
   label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
-  input[type=text]{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:8px;
+  input[type=text],select{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:8px;
     font-family:inherit;font-size:16px;color:var(--ink);background:var(--card);margin-bottom:16px}
-  input[type=text]:focus{outline:2px solid var(--ink);outline-offset:-1px;border-color:var(--ink)}
+  input[type=text]:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;border-color:var(--ink)}
+  /* [NOVO] texto de ajuda abaixo do rotulo */
+  .ajuda{display:block;font-size:12px;font-weight:400;color:var(--ink-2);margin-top:1px}
   .aceite{display:flex;gap:10px;align-items:flex-start;background:#F4F6F9;border:1px solid var(--line);
     border-radius:8px;padding:14px;margin-bottom:18px}
   .aceite input{margin-top:4px;width:18px;height:18px;flex-shrink:0}
@@ -77,7 +79,7 @@
     <h1>Avaliação para Vendedor(a) Externo(a)</h1>
     <div class="card">
       <p>São <strong>5 perguntas</strong>. Você responde falando, direto nesta página. Cada resposta leva de <strong>20 segundos a 1 minuto</strong>.</p>
-      <p>Não existe resposta certa decorada. Conte como você agiria de verdade, do seu jeito.</p>
+      <p>Não existe resposta certa. Conte como você agiria de verdade, do seu jeito.</p>
       <div class="aviso" style="background:#EAF3EF;border-color:#B8DBCB;color:#1F6F5C">
         <strong>Dica:</strong> fale com calma e num lugar silencioso. Depois de gravar, você pode ouvir sua resposta e regravar se quiser.
       </div>
@@ -85,6 +87,24 @@
       <input type="text" id="nome" autocomplete="name" placeholder="Nome e sobrenome">
       <label for="fone">Seu WhatsApp</label>
       <input type="text" id="fone" inputmode="tel" autocomplete="tel" placeholder="(00) 00000-0000">
+      <!-- [NOVO] regiao e bairro/cidade: so organizam o processo, NAO entram na avaliacao -->
+      <label for="regiao">Onde você mora?</label>
+      <select id="regiao">
+        <option value="">Escolha sua região</option>
+        <option>Rio – Zona Sul</option>
+        <option>Rio – Zona Norte</option>
+        <option>Rio – Zona Oeste</option>
+        <option>Rio – Centro</option>
+        <option>Baixada Fluminense</option>
+        <option>Niterói / São Gonçalo</option>
+        <option>Sul Fluminense</option>
+        <option>Região Serrana</option>
+        <option>Região dos Lagos</option>
+        <option>Norte Fluminense</option>
+        <option>Outra</option>
+      </select>
+      <label for="bairro">Bairro / cidade <span class="ajuda">Só o bairro ou a cidade, não precisa do endereço.</span></label>
+      <input type="text" id="bairro" autocomplete="address-level2" maxlength="80" placeholder="Ex.: Campo Grande">
       <div class="aceite">
         <input type="checkbox" id="aceite">
         <span>Autorizo a gravação das minhas respostas em áudio. Elas serão transcritas e analisadas com apoio de inteligência artificial, seguindo critérios padronizados. <strong>A decisão final é sempre tomada por uma pessoa</strong>, e posso pedir revisão. Meus dados serão usados só neste processo seletivo e apagados em até 6 meses.</span>
@@ -167,9 +187,13 @@ const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const temTranscricao = !!SR;
 
 function validar() {
-  el('btn-comecar').disabled = !(el('nome').value.trim().length > 2 && el('aceite').checked);
+  // [NOVO] so libera com nome, regiao, bairro e aceite
+  el('btn-comecar').disabled = !(el('nome').value.trim().length > 2 && el('regiao').value
+    && el('bairro').value.trim().length > 1 && el('aceite').checked);
 }
 el('nome').addEventListener('input', validar);
+el('regiao').addEventListener('change', validar);   // [NOVO]
+el('bairro').addEventListener('input', validar);    // [NOVO]
 el('aceite').addEventListener('change', validar);
 el('btn-comecar').addEventListener('click', () => {
   el('tela-inicio').classList.add('oculto');
@@ -334,6 +358,7 @@ async function enviarFinal() {
     await enviarAPI({
       acao: 'finalizar', sessao: SESSAO, nome: el('nome').value.trim(),
       telefone: el('fone').value.trim(), nivel: NIVEL, consentimento: true,
+      regiao: el('regiao').value, bairro: el('bairro').value.trim(),   // [NOVO]
       navegador: navigator.userAgent.slice(0, 120), respostas: respostas
     });
     el('msg-fim').textContent = 'Obrigado! Nossa equipe vai analisar suas respostas e entrar em contato pelo WhatsApp.';
